@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CreditLens | Loan Default Risk</title>
+  <meta name="description" content="Score a loan application with a trained XGBoost credit risk model.">
+  <meta name="theme-color" content="#0a0c11">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%238f9dff'/%3E%3Cpath d='M7 21a9 9 0 0 1 18 0' stroke='%230a0c11' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="ambient" aria-hidden="true">
+    <span class="orb orb-1"></span>
+    <span class="orb orb-2"></span>
+    <span class="grid-lines"></span>
+  </div>
+
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="CreditLens home">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="9"/>
+        <path d="M7 21a9 9 0 0 1 18 0" fill="none" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="16" cy="21" r="2.2"/>
+      </svg>
+      <span>CreditLens</span>
+    </a>
+
+    <button type="button" class="status" id="api-status" data-state="checking" title="Click to re-check the API">
+      <span class="dot"></span>
+      <span id="api-status-text">Connecting…</span>
+    </button>
+  </header>
+
+  <main class="shell">
+
+    <section class="hero reveal" style="--i:0">
+      <p class="eyebrow">Credit risk model · XGBoost</p>
+      <h1>Know the <em>risk</em><br>before you lend.</h1>
+      <p class="lede">Enter a loan application and get a default probability from the trained model, with the decision threshold already applied.</p>
+    </section>
+
+    <div class="layout">
+
+      <!-- ============ FORM ============ -->
+      <form id="risk-form" class="card form-card reveal" style="--i:1" novalidate autocomplete="off">
+
+        <div class="presets">
+          <span class="presets-label">Try an example</span>
+          <div class="presets-row">
+            <button type="button" class="pill" data-preset="stable">Stable profile</button>
+            <button type="button" class="pill" data-preset="average">Average profile</button>
+            <button type="button" class="pill" data-preset="stretched">Stretched profile</button>
+          </div>
+        </div>
+
+        <!-- 1. Applicant -->
+        <section class="section">
+          <h2 class="section-title"><span class="step">1</span>Applicant</h2>
+          <div class="grid">
+
+            <div class="field" data-field="person_age">
+              <label for="person_age">Age</label>
+              <div class="control">
+                <input id="person_age" name="person_age" type="number" inputmode="numeric" min="18" max="100" step="1" placeholder="35" class="has-suffix">
+                <span class="affix suffix">yrs</span>
+              </div>
+              <p class="msg"></p>
+            </div>
+
+            <div class="field" data-field="person_income">
+              <label for="person_income">Annual income</label>
+              <div class="control">
+                <span class="affix prefix">$</span>
+                <input id="person_income" name="person_income" type="number" inputmode="decimal" min="0" step="any" placeholder="60000" class="has-prefix">
+              </div>
+              <p class="msg"></p>
+            </div>
+
+            <div class="field" data-field="person_home_ownership">
+              <label for="person_home_ownership">Home ownership</label>
+              <div class="control">
+                <select id="person_home_ownership" name="person_home_ownership" required>
+                  <option value="" selected disabled>Select…</option>
+                  <option value="RENT">Rent</option>
+                  <option value="OWN">Own</option>
+                  <option value="MORTGAGE">Mortgage</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+              <p class="msg"></p>
+            </div>
+
+            <div class="field" data-field="person_emp_length">
+              <label for="person_emp_length">Employment length</label>
+              <div class="control">
+                <input id="person_emp_length" name="person_emp_length" type="number" inputmode="decimal" min="0" step="any" placeholder="5" class="has-suffix">
+                <span class="affix suffix">yrs</span>
+              </div>
+              <p class="msg"></p>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- 2. Loan -->
+        <section class="section">
+          <h2 class="section-title"><span class="step">2</span>Loan</h2>
+          <div class="grid">
+
+            <div class="field" data-field="loan_intent">
+              <label for="loan_intent">Purpose</label>
+              <div class="control">
+                <select id="loan_intent" name="loan_intent" required>
+                  <option value="" selected disabled>Select…</option>
+                  <option value="PERSONAL">Personal</option>
+                  <option value="EDUCATION">Education</option>
+                  <option value="MEDICAL">Medical</option>
+                  <option value="VENTURE">Venture</option>
+                  <option value="HOMEIMPROVEMENT">Home improvement</option>
+                  <option value="DEBTCONSOLIDATION">Debt consolidation</option>
+                </select>
+              </div>
+              <p class="msg"></p>
+            </div>
+
+            <div class="field" data-field="loan_amnt">
+              <label for="loan_amnt">Loan amount</label>
+              <div class="control">
+                <span class="affix prefix">$</span>
+                <input id="loan_amnt" name="loan_amnt" type="number" inputmode="decimal" min="0" step="any" placeholder="10000" class="has-prefix">
+              </div>
+              <p class="msg"></p>
+            </div>
+
+            <div class="field span-2" data-field="loan_grade">
+              <span class="label" id="grade-label">Loan grade</span>
+              <div class="chips" role="radiogroup" aria-labelledby="grade-label">
+                <label class="chip"><input type="radio" name="loan_grade" value="A"><span>A</span></label>
+                <label class="chip"><input type="radio" name="loan_grade" value="B"><span>B</span></label>
+                <label class="chip"><input type="radio" name="loan_grade" value="C"><span>C</span></label>
+                <label class="chip"><input type="radio" name="loan_grade" value="D"><span>D</span></label>
+                <label class="chip"><input type="radio" name="loan_grade" value="E"><span>E</span></label>
+                <label class="chip"><input type="radio" name="loan_grade" value="F"><span>F</span></label>
+                <label class="chip"><input type="radio" name="loan_grade" value="G"><span>G</span></label>
+              </div>
+              <p class="hint">A is the lowest risk grade, G the highest.</p>
+              <p class="msg"></p>
+            </div>
+
+            <div class="field" data-field="loan_int_rate">
+              <label for="loan_int_rate">Interest rate</label>
+              <div class="control">
+                <input id="loan_int_rate" name="loan_int_rate" type="number" inputmode="decimal" min="0" step="0.01" placeholder="11.5" class="has-suffix">
+                <span class="affix suffix">%</span>
+              </div>
+              <input id="loan_int_rate_range" class="range" type="range" min="5" max="25" step="0.1" value="12" aria-label="Interest rate slider">
+              <p class="msg"></p>
+            </div>
+
+            <div class="field" data-field="loan_percent_income">
+              <label for="loan_percent_income">Loan-to-income <span class="tag">auto</span></label>
+              <div class="control">
+                <input id="loan_percent_income" name="loan_percent_income" type="text" readonly tabindex="-1" placeholder="0.00" class="readonly">
+              </div>
+              <p class="hint">Loan amount ÷ annual income.</p>
+              <p class="msg"></p>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- 3. Credit history -->
+        <section class="section">
+          <h2 class="section-title"><span class="step">3</span>Credit history</h2>
+          <div class="grid">
+
+            <div class="field" data-field="cb_person_default_on_file">
+              <span class="label" id="default-label">Previous default on file</span>
+              <div class="chips segmented" role="radiogroup" aria-labelledby="default-label">
+                <label class="chip"><input type="radio" name="cb_person_default_on_file" value="N" checked><span>No</span></label>
+                <label class="chip"><input type="radio" name="cb_person_default_on_file" value="Y"><span>Yes</span></label>
+              </div>
+              <p class="msg"></p>
+            </div>
+
+            <div class="field" data-field="cb_person_cred_hist_length">
+              <label for="cb_person_cred_hist_length">Credit history length</label>
+              <div class="control">
+                <input id="cb_person_cred_hist_length" name="cb_person_cred_hist_length" type="number" inputmode="numeric" min="0" step="1" placeholder="6" class="has-suffix">
+                <span class="affix suffix">yrs</span>
+              </div>
+              <p class="msg"></p>
+            </div>
+
+          </div>
+        </section>
+
+        <div class="actions">
+          <button type="submit" id="submit-btn" class="btn-primary">
+            <span class="btn-label">Assess risk</span>
+            <span class="btn-spinner" aria-hidden="true"></span>
+            <svg class="btn-arrow" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11M11 5l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button type="reset" class="btn-ghost">Clear</button>
+        </div>
+      </form>
+
+      <!-- ============ RESULT ============ -->
+      <aside id="result-card" class="card result-card reveal" style="--i:2" data-state="idle" aria-live="polite">
+
+        <div class="result-head">
+          <h2>Assessment</h2>
+          <span class="badge" id="verdict-badge"><span class="badge-dot"></span><span id="verdict-badge-text">Awaiting input</span></span>
+        </div>
+
+        <div class="gauge-wrap">
+          <svg class="gauge" viewBox="0 0 220 122" role="img" aria-label="Default probability gauge">
+            <path class="gauge-track" d="M20 110 A90 90 0 0 1 200 110" pathLength="100"/>
+            <path class="gauge-scan"  d="M20 110 A90 90 0 0 1 200 110" pathLength="100"/>
+            <path class="gauge-fill" id="gauge-fill" d="M20 110 A90 90 0 0 1 200 110" pathLength="100"/>
+            <line class="gauge-tick" id="gauge-tick" x1="0" y1="0" x2="0" y2="0"/>
+          </svg>
+          <div class="gauge-readout">
+            <div class="pct"><span id="pct-value">—</span><span class="pct-sign">%</span></div>
+            <div class="pct-label">probability of default</div>
+          </div>
+        </div>
+
+        <p class="verdict-line" id="verdict-line">Fill in the application and run an assessment.</p>
+
+        <dl class="stats">
+          <div class="stat"><dt>Threshold</dt><dd id="stat-threshold">—</dd></div>
+          <div class="stat"><dt>vs. threshold</dt><dd id="stat-margin">—</dd></div>
+          <div class="stat"><dt>Loan / income</dt><dd id="stat-lti">—</dd></div>
+        </dl>
+
+        <details class="raw">
+          <summary>Raw API response</summary>
+          <pre id="raw-json"></pre>
+        </details>
+      </aside>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>Model output is a statistical estimate and not financial advice. The tick on the gauge marks the decision threshold.</p>
+  </footer>
+
+  <script src="script.js" defer></script>
+</body>
+</html>
