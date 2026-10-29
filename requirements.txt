@@ -1,15 +1,8 @@
-# Web framework / server
-fastapi>=0.110
-uvicorn[standard]>=0.29
+fastapi
+uvicorn[standard]
 pydantic>=2.6
-
-# Model + preprocessing stack
-# IMPORTANT: pin scikit-learn, xgboost, numpy and pandas to the exact versions
-# you used when you trained and saved the model (run `pip freeze | findstr "scikit xgboost numpy pandas"`
-# in your training environment). Pickled preprocessors can fail or behave
-# differently across versions.
-pandas>=2.1
-numpy>=1.26
-scikit-learn>=1.4
+pandas>=2.2,<2.4
+numpy>=1.26,<2.3
+scikit-learn==1.6.1
 xgboost>=2.0
-joblib>=1.3
+joblib
