@@ -1,4 +1,3 @@
-
 from pathlib import Path
 from contextlib import asynccontextmanager
 
@@ -7,6 +6,7 @@ import pandas as pd
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from sklearn.pipeline import Pipeline
 from xgboost import XGBClassifier
@@ -105,19 +105,6 @@ app.add_middleware(
 
 
 # ==================================================
-# 5. HOME ENDPOINT
-# ==================================================
-
-@app.get("/")
-def greet():
-    return {
-        "message": "CreditLens API is running",
-        "status": "online",
-        "documentation": "/docs",
-    }
-
-
-# ==================================================
 # 6. HEALTH CHECK ENDPOINT
 # ==================================================
 
@@ -186,3 +173,14 @@ def predict(data: LoanApplication):
             else "Low Risk"
         ),
     }
+
+
+# ==================================================
+# 9. SERVE THE UI (keep this LAST in the file)
+# ==================================================
+
+app.mount(
+    "/",
+    StaticFiles(directory=BASE_DIR / "static", html=True),
+    name="ui",
+)
